@@ -53,21 +53,34 @@
   const roomRef = db.ref("rooms/demoRoom");
 
   let player = ""; // ตัวแปรเก็บผู้เล่นที่เชื่อมต่อ
+  let playerJoined = false;
+
+  // กำหนดห้องและสถานะผู้เล่น
   roomRef.once("value", snap => {
     const data = snap.val();
+
     if (!data) {
       // ถ้าไม่มีข้อมูลห้องเลย จะเริ่มต้นห้องใหม่
       player = "p1";
       roomRef.set({ p1: true, p2: false, turn: "p1", p1HP: 100, p2HP: 100 });
+      playerJoined = true;
     } else if (!data.p1) {
       player = "p1";
       roomRef.update({ p1: true });
+      playerJoined = true;
     } else if (!data.p2) {
       player = "p2";
       roomRef.update({ p2: true });
+      playerJoined = true;
     } else {
       alert("ห้องเต็มแล้ว!");
     }
+
+    if (!playerJoined) {
+      alert("ห้องเต็มแล้ว! กรุณาลองใหม่");
+      return;
+    }
+
     // กำหนดผู้เล่นให้ถูกต้อง
     document.getElementById("playerRole").textContent = player === "p1" ? "Player 1 (🐱)" : "Player 2 (🐶)";
   });
