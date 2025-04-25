@@ -36,7 +36,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
 <script>
-  // กำหนดการตั้งค่า Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyB3xGbVzrKxJA3HFI_gzpcThm5j-uL-lTA",
     authDomain: "cute-battle-game.firebaseapp.com",
@@ -51,25 +50,28 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // กำหนดห้อง
   const roomRef = db.ref("rooms/demoRoom");
 
   let player = ""; // ตัวแปรเก็บผู้เล่นที่เชื่อมต่อ
   roomRef.once("value", snap => {
     const data = snap.val();
-    if (!data || !data.p1) {
+    if (!data) {
+      // ถ้าไม่มีข้อมูลห้องเลย จะเริ่มต้นห้องใหม่
       player = "p1";
       roomRef.set({ p1: true, p2: false, turn: "p1", p1HP: 100, p2HP: 100 });
+    } else if (!data.p1) {
+      player = "p1";
+      roomRef.update({ p1: true });
     } else if (!data.p2) {
       player = "p2";
       roomRef.update({ p2: true });
     } else {
       alert("ห้องเต็มแล้ว!");
     }
+    // กำหนดผู้เล่นให้ถูกต้อง
     document.getElementById("playerRole").textContent = player === "p1" ? "Player 1 (🐱)" : "Player 2 (🐶)";
   });
 
-  // ปุ่มโจมตี
   const btn = document.getElementById("attackBtn");
   btn.onclick = () => {
     roomRef.once("value", snap => {
@@ -85,7 +87,6 @@
     });
   };
 
-  // อัปเดตสถานะแบบเรียลไทม์
   roomRef.on("value", snap => {
     const data = snap.val();
     if (!data) return;
@@ -93,16 +94,13 @@
     document.getElementById("p1HP").textContent = data.p1HP;
     document.getElementById("p2HP").textContent = data.p2HP;
 
-    // ปรับสถานะปุ่มโจมตี
     btn.disabled = (data.turn !== player || data.p1HP <= 0 || data.p2HP <= 0);
 
-    // เช็คว่าใครชนะหรือยัง
     if (data.p1HP <= 0) log("🐶 Player 2 ชนะ!");
     else if (data.p2HP <= 0) log("🐱 Player 1 ชนะ!");
     else log("เทิร์นของ: " + (data.turn === "p1" ? "🐱 Player 1" : "🐶 Player 2"));
   });
 
-  // ฟังก์ชันสำหรับแสดงข้อความใน log
   function log(msg) {
     document.getElementById("log").innerHTML = "<p>" + msg + "</p>";
   }
