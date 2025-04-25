@@ -49,60 +49,58 @@
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
-</script>
 
+  // 💡 กำหนดห้อง
+  const roomRef = db.ref("rooms/demoRoom");
 
-    // 💡 กำหนดห้อง
-    const roomRef = db.ref("rooms/demoRoom");
+  // 🎮 สุ่มเป็น Player 1 หรือ 2
+  let player = "";
+  roomRef.once("value", snap => {
+    const data = snap.val();
+    if (!data || !data.p1) {
+      player = "p1";
+      roomRef.set({ p1: true, p2: false, turn: "p1", p1HP: 100, p2HP: 100 });
+    } else if (!data.p2) {
+      player = "p2";
+      roomRef.update({ p2: true });
+    } else {
+      alert("ห้องเต็มแล้ว!");
+    }
+    document.getElementById("playerRole").textContent = player === "p1" ? "Player 1 (🐱)" : "Player 2 (🐶)";
+  });
 
-    // 🎮 สุ่มเป็น Player 1 หรือ 2
-    let player = "";
+  // 🎯 ปุ่มโจมตี
+  const btn = document.getElementById("attackBtn");
+  btn.onclick = () => {
     roomRef.once("value", snap => {
       const data = snap.val();
-      if (!data || !data.p1) {
-        player = "p1";
-        roomRef.set({ p1: true, p2: false, turn: "p1", p1HP: 100, p2HP: 100 });
-      } else if (!data.p2) {
-        player = "p2";
-        roomRef.update({ p2: true });
-      } else {
-        alert("ห้องเต็มแล้ว!");
-      }
-      document.getElementById("playerRole").textContent = player === "p1" ? "Player 1 (🐱)" : "Player 2 (🐶)";
+      if (data.turn !== player) return;
+
+      const newHP = (player === "p1" ? data.p2HP : data.p1HP) - 20;
+      const update = {
+        turn: player === "p1" ? "p2" : "p1",
+        [player === "p1" ? "p2HP" : "p1HP"]: newHP < 0 ? 0 : newHP
+      };
+      roomRef.update(update);
     });
+  };
 
-    // 🎯 ปุ่มโจมตี
-    const btn = document.getElementById("attackBtn");
-    btn.onclick = () => {
-      roomRef.once("value", snap => {
-        const data = snap.val();
-        if (data.turn !== player) return;
+  // 🔄 อัปเดตสถานะแบบเรียลไทม์
+  roomRef.on("value", snap => {
+    const data = snap.val();
+    if (!data) return;
+    document.getElementById("p1HP").textContent = data.p1HP;
+    document.getElementById("p2HP").textContent = data.p2HP;
+    btn.disabled = (data.turn !== player || data.p1HP <= 0 || data.p2HP <= 0);
 
-        const newHP = (player === "p1" ? data.p2HP : data.p1HP) - 20;
-        const update = {
-          turn: player === "p1" ? "p2" : "p1",
-          [player === "p1" ? "p2HP" : "p1HP"]: newHP < 0 ? 0 : newHP
-        };
-        roomRef.update(update);
-      });
-    };
+    if (data.p1HP <= 0) log("🐶 Player 2 ชนะ!");
+    else if (data.p2HP <= 0) log("🐱 Player 1 ชนะ!");
+    else log("เทิร์นของ: " + (data.turn === "p1" ? "🐱 Player 1" : "🐶 Player 2"));
+  });
 
-    // 🔄 อัปเดตสถานะแบบเรียลไทม์
-    roomRef.on("value", snap => {
-      const data = snap.val();
-      if (!data) return;
-      document.getElementById("p1HP").textContent = data.p1HP;
-      document.getElementById("p2HP").textContent = data.p2HP;
-      btn.disabled = (data.turn !== player || data.p1HP <= 0 || data.p2HP <= 0);
-
-      if (data.p1HP <= 0) log("🐶 Player 2 ชนะ!");
-      else if (data.p2HP <= 0) log("🐱 Player 1 ชนะ!");
-      else log("เทิร์นของ: " + (data.turn === "p1" ? "🐱 Player 1" : "🐶 Player 2"));
-    });
-
-    function log(msg) {
-      document.getElementById("log").innerHTML = "<p>" + msg + "</p>";
-    }
-  </script>
+  function log(msg) {
+    document.getElementById("log").innerHTML = "<p>" + msg + "</p>";
+  }
+</script>
 </body>
 </html>
