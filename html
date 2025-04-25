@@ -1,0 +1,28 @@
+<!-- ตัวอย่างโค้ด HTML/JS แบบเทิร์นเบสพื้นฐาน -->
+<div id="battle-log"></div>
+<button onclick="attack()">โจมตี!</button>
+
+<script>
+  let playerHP = 100;
+  let enemyHP = 100;
+  let turn = "player";
+
+  function attack() {
+    if (turn === "player") {
+      enemyHP -= 20;
+      log("ผู้เล่นโจมตี! ศัตรูเหลือ HP: " + enemyHP);
+      turn = "enemy";
+      setTimeout(enemyTurn, 1000); // ศัตรูตอบโต้หลัง 1 วิ
+    }
+  }
+
+  function enemyTurn() {
+    playerHP -= 15;
+    log("ศัตรูโจมตี! ผู้เล่นเหลือ HP: " + playerHP);
+    turn = "player";
+  }
+
+  function log(text) {
+    document.getElementById("battle-log").innerHTML += `<p>${text}</p>`;
+  }
+</script>
