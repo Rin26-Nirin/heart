@@ -1,28 +1,106 @@
-<!-- ตัวอย่างโค้ด HTML/JS แบบเทิร์นเบสพื้นฐาน -->
-<div id="battle-log"></div>
-<button onclick="attack()">โจมตี!</button>
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>เกมต่อสู้ผลัดกันตี</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; background: #ffe8f0; padding: 2rem; }
+    .character { font-size: 3rem; }
+    #log { margin-top: 1rem; color: #444; }
+    button { padding: 10px 20px; font-size: 1.2rem; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>💥 เกมผลัดกันตี! 💥</h1>
 
-<script>
-  let playerHP = 100;
-  let enemyHP = 100;
-  let turn = "player";
+  <p>คุณคือ: <strong id="playerRole">รอเชื่อมต่อ...</strong></p>
 
-  function attack() {
-    if (turn === "player") {
-      enemyHP -= 20;
-      log("ผู้เล่นโจมตี! ศัตรูเหลือ HP: " + enemyHP);
-      turn = "enemy";
-      setTimeout(enemyTurn, 1000); // ศัตรูตอบโต้หลัง 1 วิ
+  <div>
+    <div class="character">🐱</div>
+    <div>Player 1 HP: <span id="p1HP">100</span></div>
+  </div>
+
+  <div style="margin: 1rem 0;"></div>
+
+  <div>
+    <div class="character">🐶</div>
+    <div>Player 2 HP: <span id="p2HP">100</span></div>
+  </div>
+
+  <button id="attackBtn" disabled>โจมตี!</button>
+
+  <div id="log"></div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+  <script>
+    // 🔧 กรอก config Firebase ของคุณที่นี่
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "XXXXXXXXXX",
+      appId: "YOUR_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // 💡 กำหนดห้อง
+    const roomRef = db.ref("rooms/demoRoom");
+
+    // 🎮 สุ่มเป็น Player 1 หรือ 2
+    let player = "";
+    roomRef.once("value", snap => {
+      const data = snap.val();
+      if (!data || !data.p1) {
+        player = "p1";
+        roomRef.set({ p1: true, p2: false, turn: "p1", p1HP: 100, p2HP: 100 });
+      } else if (!data.p2) {
+        player = "p2";
+        roomRef.update({ p2: true });
+      } else {
+        alert("ห้องเต็มแล้ว!");
+      }
+      document.getElementById("playerRole").textContent = player === "p1" ? "Player 1 (🐱)" : "Player 2 (🐶)";
+    });
+
+    // 🎯 ปุ่มโจมตี
+    const btn = document.getElementById("attackBtn");
+    btn.onclick = () => {
+      roomRef.once("value", snap => {
+        const data = snap.val();
+        if (data.turn !== player) return;
+
+        const newHP = (player === "p1" ? data.p2HP : data.p1HP) - 20;
+        const update = {
+          turn: player === "p1" ? "p2" : "p1",
+          [player === "p1" ? "p2HP" : "p1HP"]: newHP < 0 ? 0 : newHP
+        };
+        roomRef.update(update);
+      });
+    };
+
+    // 🔄 อัปเดตสถานะแบบเรียลไทม์
+    roomRef.on("value", snap => {
+      const data = snap.val();
+      if (!data) return;
+      document.getElementById("p1HP").textContent = data.p1HP;
+      document.getElementById("p2HP").textContent = data.p2HP;
+      btn.disabled = (data.turn !== player || data.p1HP <= 0 || data.p2HP <= 0);
+
+      if (data.p1HP <= 0) log("🐶 Player 2 ชนะ!");
+      else if (data.p2HP <= 0) log("🐱 Player 1 ชนะ!");
+      else log("เทิร์นของ: " + (data.turn === "p1" ? "🐱 Player 1" : "🐶 Player 2"));
+    });
+
+    function log(msg) {
+      document.getElementById("log").innerHTML = "<p>" + msg + "</p>";
     }
-  }
-
-  function enemyTurn() {
-    playerHP -= 15;
-    log("ศัตรูโจมตี! ผู้เล่นเหลือ HP: " + playerHP);
-    turn = "player";
-  }
-
-  function log(text) {
-    document.getElementById("battle-log").innerHTML += `<p>${text}</p>`;
-  }
-</script>
+  </script>
+</body>
+</html>
