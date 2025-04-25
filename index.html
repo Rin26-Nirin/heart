@@ -59,8 +59,8 @@
   roomRef.once("value", snap => {
     const data = snap.val();
 
-    if (!data) {
-      // ถ้าไม่มีข้อมูลห้องเลย จะเริ่มต้นห้องใหม่
+    if (!data || (data && !data.p1 && !data.p2)) {
+      // ถ้าไม่มีข้อมูลห้องเลย หรือห้องไม่มีผู้เล่น
       player = "p1";
       roomRef.set({ p1: true, p2: false, turn: "p1", p1HP: 100, p2HP: 100 });
       playerJoined = true;
